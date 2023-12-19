@@ -1,0 +1,42 @@
+version: "3"
+
+services:
+  nginx:
+    build:
+      context: ./nginx
+    container_name: nginx
+    networks:
+      - main
+    ports:
+      - 8080:8080
+    depends_on:
+      - app
+  app:
+    build:
+      context: ./node
+    container_name: app
+    tty: true
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - main
+  db:
+    build:
+      context: ./mysql
+    command: --innodb-use-native-aio=0
+    container_name: db
+    restart: always
+    tty: true
+    healthcheck:
+      test:
+        ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-proot"]
+      interval: 15s
+      timeout: 10s
+      retries: 3
+    networks:
+      - main
+
+networks:
+  main:
+    driver: bridge
